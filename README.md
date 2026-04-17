@@ -2,7 +2,7 @@
 
 Automates the Feynman learning loop inside Claude Code. Every session surfaces what you half-understood, runs you through structured Socratic questioning, and saves notes with spaced repetition scheduling — so knowledge actually sticks.
 
-No Docker. No external services. No API keys. Just Claude Code, a folder of markdown files, and three slash commands.
+No Docker. No external services. No API keys. Just Claude Code, a folder of markdown files, and four slash commands.
 
 See `WORKFLOW.md` for a plain-language explanation of how it works before you set it up.
 
@@ -12,21 +12,42 @@ See `WORKFLOW.md` for a plain-language explanation of how it works before you se
 
 | Command | What it does |
 |---|---|
-| `/feynman <concept>` | 5-phase Feynman session on anything. Saves a structured note with a review date. |
-| `/learn-from-session` | Scans the current session for concepts to queue. Run it at the end of any session. |
-| `/morning-brief` | Shows what's queued and what's overdue for review. |
+| `/feynman <concept>` | Full Feynman session — confidence prediction, gap analysis, adversarial questions, teaching mode. Saves structured note with spaced repetition. |
+| `/feynman <concept> --teach` | Teaching mode — Claude plays the confused student. Unlocked after 3+ reviews with strong recall. |
+| `/deep-feynman <concept>` | Research-backed Feynman — spawns a researcher agent to gather authoritative sources first, then a challenger agent to stress-test your explanation. Use for security, specs, protocols, and anything where being wrong has consequences. |
+| `/learn-from-session` | Scans the current session for concepts to queue. Run at the end of any session. Optionally saves a session log. |
+| `/morning-brief` | Shows misconceptions, what's due for review, cold domains, and teaching-ready concepts. |
 
 Plus a **Stop hook** that fires automatically after substantive sessions and triggers `/learn-from-session` without you thinking about it.
+
+---
+
+## Vault Structure
+
+```
+~/RecallVault/
+├── Feynman Sessions/          ← one file per concept
+│   ├── 2026-04-17 - DNS resolution.md
+│   └── ...
+├── Misconceptions/            ← concepts you actively got wrong
+│   └── DNS resolution.md
+├── Analogies/                 ← best analogy from each session
+│   └── DNS resolution.md
+├── Queue/                     ← concepts deferred for later
+│   └── docker volumes - TO REVIEW.md
+├── Session Logs/              ← optional session narrative logs
+│   └── 2026-04-17.md
+└── Templates/
+    └── Feynman Session Template.md
+```
 
 ---
 
 ## Requirements
 
 - [Claude Code](https://claude.ai/code) CLI, authenticated
-- Any text editor (or [Obsidian](https://obsidian.md/) if you want wikilinks and graph view)
+- Any text editor (or [Obsidian](https://obsidian.md/) for wikilinks and graph view)
 - macOS, Linux, or Windows with WSL2
-
-That's it.
 
 ---
 
@@ -37,6 +58,7 @@ That's it.
 ```bash
 mkdir -p ~/.claude/commands
 cp claude/commands/feynman.md ~/.claude/commands/
+cp claude/commands/deep-feynman.md ~/.claude/commands/
 cp claude/commands/learn-from-session.md ~/.claude/commands/
 cp claude/commands/morning-brief.md ~/.claude/commands/
 ```
@@ -59,6 +81,9 @@ Create the vault structure:
 VAULT=$(cat ~/.recallforge/config | grep vault_path | cut -d= -f2)
 mkdir -p "$VAULT/Feynman Sessions"
 mkdir -p "$VAULT/Queue"
+mkdir -p "$VAULT/Misconceptions"
+mkdir -p "$VAULT/Analogies"
+mkdir -p "$VAULT/Session Logs"
 mkdir -p "$VAULT/Templates"
 cp vault/Templates/"Feynman Session Template.md" "$VAULT/Templates/"
 ```
@@ -99,37 +124,25 @@ If you already have one, add this inside the `"hooks"` object:
 ## Verify It Works
 
 **Test Feynman:**
-Open any Claude Code session and run:
 ```
 /feynman DNS resolution
 ```
-Claude should run a 5-phase session and save a note to your vault.
+Should run a session and save a note to your vault.
+
+**Test deep Feynman:**
+```
+/deep-feynman TLS handshake
+```
+Should spawn a researcher agent for sources, then run the full session.
 
 **Test the brief:**
 ```
 /morning-brief
 ```
-Should report 1 item queued for review (the note you just created).
+Should show 1 item due for review.
 
 **Test the hook:**
 Run a session with 8+ tool calls and end it. Claude should automatically offer to run `/learn-from-session`.
-
----
-
-## Vault Structure
-
-```
-~/RecallVault/
-├── Feynman Sessions/          ← one file per concept
-│   ├── 2026-04-17 - DNS resolution.md
-│   └── ...
-├── Queue/                     ← concepts queued from /learn-from-session
-│   └── docker volumes - TO REVIEW.md
-└── Templates/
-    └── Feynman Session Template.md
-```
-
-Files are plain markdown. Open the vault folder in Obsidian for wikilinks and graph view — or just use any text editor.
 
 ---
 
@@ -137,7 +150,7 @@ Files are plain markdown. Open the vault folder in Obsidian for wikilinks and gr
 
 Point Obsidian at your vault folder: **Open folder as vault** → select the path from `~/.recallforge/config`.
 
-Wikilinks in the `## Connections` section of each note will link automatically to other notes in the vault as your knowledge base grows.
+Wikilinks in `## Connections` link to other notes as your vault grows. The `Misconceptions/` and `Analogies/` folders surface as separate graph clusters.
 
 ---
 
@@ -147,7 +160,7 @@ Wikilinks in the `## Connections` section of each note will link automatically t
 Check that the vault path in `~/.recallforge/config` exists and is writable.
 
 **Hook not firing**
-Verify `~/.claude/settings.json` has the Stop hook and that `auto-learn.sh` is executable:
+Verify `~/.claude/settings.json` has the Stop hook registered and that `auto-learn.sh` is executable:
 ```bash
 chmod +x ~/.claude/hooks/auto-learn.sh
 ```
