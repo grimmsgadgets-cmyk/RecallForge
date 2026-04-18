@@ -23,26 +23,61 @@ Run the following sequence exactly. Do not skip phases. Do not rush to the next 
 
 ### Phase 0 — Setup
 
-**Analogy transfer check (run silently before introducing the concept):**
+**Step 1 — Goal + prior engagement (ask both in one message):**
 
-Spawn an Agent with this prompt:
-> "Scan the files in `$VAULT/Analogies/` (vault path from `cat $HOME/.recallforge/config 2>/dev/null | grep vault_path | cut -d= -f2`, fallback `$HOME/RecallVault`). List any analogies whose underlying structure could transfer to: `$ARGUMENTS`. For example, if the concept involves flow control, look for flow-control analogies from other domains. Return: concept name + analogy text + why it transfers. If nothing relevant exists, return 'none'. Be brief."
+Ask:
 
-If the agent returns a relevant analogy, surface it in Phase 0 before the user explains. Building on an existing mental model is faster than building from scratch.
+> "Two quick questions before we start:
+> 1. What's your goal for this session? (e.g. understanding it for the first time, filling a specific gap, preparing to explain it to someone)
+> 2. Have you already studied or engaged with this concept, or are you coming in completely fresh?"
 
-Introduce the concept using this structure — no headers, just flow:
+Wait for the user's response.
+
+---
+
+**Step 2 — Notebook exercise (always run this, regardless of prior engagement):**
+
+This is the core of Feynman's method: surface what you *think* you know and explicitly name what you don't. Ask:
+
+> "Before anything else — write down:
+> - What do you think you already know about [concept]? (Even vague impressions count.)
+> - What specifically are you unsure or confused about?
+> - What questions do you want to be able to answer by the end?"
+
+Wait for the user's response. These known unknowns drive everything — use them to focus the study material and sharpen the Socratic questions later.
+
+---
+
+**Step 3 — Branch based on prior engagement:**
+
+**If fresh (hasn't studied yet):**
+
+Run the analogy transfer check silently (see below), then provide structured study material:
 
 **One-sentence summary:** [what it is, plain language]
 
 **Big idea:** [the core mechanism or insight — 2–3 sentences, zero jargon]
 
-**What to be skeptical of:** [1–2 common traps — things people think they understand but don't, or places the concept gets misapplied]
+**What to be skeptical of:** [1–2 common traps — places the concept gets misapplied or misunderstood]
 
-Then ask:
+If the analogy check returned something relevant, include it here.
 
-> "Before you explain — gut check, 0–5: how well do you think you understand this right now? Then teach it to me like I've never heard of it. Your own words."
+Then say:
+> "Take a moment to read that. When you're ready, close it and explain it back to me in your own words — don't re-read, just explain from what you absorbed."
 
-Wait for the user's response. Record their predicted score (or `"not given"` if they skip it).
+**If already studied:**
+
+Skip the study material entirely — no priming. Go straight to:
+> "Gut check, 0–5: how well do you think you understand this right now? Then teach it to me like I've never heard of it. Your own words."
+
+In both cases, record their confidence score (or `"not given"` if skipped).
+
+---
+
+**Analogy transfer check (run silently during Step 3):**
+
+Spawn an Agent with this prompt:
+> "Scan the files in `$VAULT/Analogies/` (vault path from `cat $HOME/.recallforge/config 2>/dev/null | grep vault_path | cut -d= -f2`, fallback `$HOME/RecallVault`). List any analogies whose underlying structure could transfer to: `$ARGUMENTS`. Return: concept name + analogy text + why it transfers. If nothing relevant, return 'none'. Be brief."
 
 ---
 
